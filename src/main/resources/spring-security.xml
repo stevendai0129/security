@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:beans="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans.xsd
+          http://www.springframework.org/schema/security
+          http://www.springframework.org/schema/security/spring-security.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <security:http>
+<!--        <security:intercept-url pattern="/userlogin" access="permitAll()"/>-->
+        <security:intercept-url pattern="/" access="permitAll()"/>
+        <security:intercept-url pattern="/dist/**" access="permitAll()"/>
+        <security:intercept-url pattern="/hello" access="permitAll()"/>
+<!--        <security:intercept-url pattern="/**/home" access="permitAll()"/>-->
+        <security:intercept-url pattern="/**" access="hasRole('ROLE_USER')"/>
+        <security:http-basic entry-point-ref="myBasicAuthenticationEntryPoint"/>
+<!--        <security:http-basic/>-->
+
+        <!-- 禁用CSRF保护 -->
+        <security:csrf disabled="true"/>
+        <security:cors configuration-source-ref="corsConfigSource"/>
+<!--        <security:headers>-->
+<!--            <security:frame-options disabled="false"/>-->
+<!--            <security:header ref="sessionInvalidHeadersWriter"/>-->
+<!--        </security:headers>-->
+
+
+<!--        <security:form-login login-page="login.jsp"-->
+<!--                             login-processing-url="/login"-->
+<!--                             authentication-failure-url="/loginfail"-->
+<!--                             />-->
+
+<!--        <security:form-login login-page="/login"-->
+<!--                             login-processing-url="/login"-->
+<!--                    default-target-url="/hello"-->
+<!--                    authentication-failure-url="/loginfail"-->
+<!--                    username-parameter="username"-->
+<!--                    password-parameter="password" />-->
+
+
+    <security:custom-filter ref="myUsernamePasswordAuthenticationFilter" position="FORM_LOGIN_FILTER"/>
+    <security:custom-filter ref="customFilter" after="BASIC_AUTH_FILTER"/>
+
+    <security:logout invalidate-session="true" delete-cookies="true" success-handler-ref="logoutSuccessHandler"/>
+
+
+
+    </security:http>
+
+
+
+
+    <security:authentication-manager alias="authenticationManager">
+        <security:authentication-provider user-service-ref="userService">
+            <!-- 这个配置使用basic-auth验证的时候 提示报错没有设置password-encoder,这里设置一个不加密的密码验证器-->
+            <security:password-encoder ref="noOpPasswordEncoder"/>
+            <!-- 这个配置模拟固定的用户-->
+<!--            <security:user-service>-->
+<!--                <security:user name="admin" password="{noop}nimda" authorities="ROLE_USER"/>-->
+<!--            </security:user-service>-->
+
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+    <bean id="authenticationSuccessHandler" class="com.hb.controller.MyAuthenticationSuccessHandler"/>
+    <bean id="authenticationFailureHandler" class="com.hb.controller.MyAuthenticationFailureHandler"/>
+    <bean id="logoutSuccessHandler" class="com.hb.controller.MyLogoutSuccessHandler"/>
+
+
+    <bean id="userService" class="com.hb.controller.UserDetailService"></bean>
+    <bean id="noOpPasswordEncoder" class="org.springframework.security.crypto.password.NoOpPasswordEncoder" />
+    <bean id="myBasicAuthenticationEntryPoint" class="com.hb.controller.MyBasicAuthenticationEntryPoint"/>
+    <bean id="customFilter" class="com.hb.controller.CustomerFilter"/>
+    <bean id="myUsernamePasswordAuthenticationFilter" class="com.hb.controller.MyUsernamePasswordAuthenticationFilter">
+        <property name="authenticationManager" ref="authenticationManager"></property>
+        <property name="authenticationSuccessHandler" ref="authenticationSuccessHandler"/>
+        <property name="authenticationFailureHandler" ref="authenticationFailureHandler"/>
+    </bean>
+
+    <bean id="corsConfigSource" class="org.springframework.web.cors.UrlBasedCorsConfigurationSource">
+        <property name="corsConfigurations">
+            <map>
+                <entry key="/**">
+                    <bean class="org.springframework.web.cors.CorsConfiguration">
+                        <property name="allowedOrigins" value="http://localhost:4200"/>
+                        <property name="allowedMethods">
+                            <list>
+                                <value>GET</value>
+                                <value>POST</value>
+                                <value>DELETE</value>
+                                <value>OPTIONS</value>
+                            </list>
+                        </property>
+                        <property name="allowedHeaders">
+                            <list>
+                                <value>X-Requested-With</value>
+                                <value>Content-Type</value>
+                                <value>Authorization</value>
+                            </list>
+                        </property>
+                        <property name="maxAge" value="3600"/>
+                        <property name="allowCredentials" value="true"/>
+                    </bean>
+                </entry>
+            </map>
+        </property>
+    </bean>
+
+<!--    <bean id="sessionInvalidHeadersWriter" class="com.hb.controller.SessionInvalidHeadersWriter">-->
+<!--        <constructor-arg>-->
+<!--            <list>-->
+<!--                <bean class="org.springframework.security.web.header.Header">-->
+<!--                  <constructor-arg index="0" value="Access-Control-Allow-Origin"/>-->
+<!--                  <constructor-arg index="1" value="*"/>-->
+<!--                </bean>-->
+<!--                &lt;!&ndash;<bean class="org.springframework.security.web.header.Header">-->
+<!--                  <constructor-arg index="0" value="Access-Control-Allow-Credentials"/>-->
+<!--                  <constructor-arg index="1" value="true"/>-->
+<!--                </bean>&ndash;&gt;-->
+<!--                <bean class="org.springframework.security.web.header.Header">-->
+<!--                    <constructor-arg index="0" value="Access-Control-Allow-Methods"/>-->
+<!--                    <constructor-arg index="1" value="POST, GET, OPTIONS, DELETE"/>-->
+<!--                </bean>-->
+<!--                <bean class="org.springframework.security.web.header.Header">-->
+<!--                    <constructor-arg index="0" value="Access-Control-Allow-Headers"/>-->
+<!--                    <constructor-arg index="1" value="x-requested-with"/>-->
+<!--                </bean>-->
+<!--                <bean class="org.springframework.security.web.header.Header">-->
+<!--                    <constructor-arg index="0" value="Access-Control-Max-Age"/>-->
+<!--                    <constructor-arg index="1" value="3600"/>-->
+<!--                </bean>-->
+<!--            </list>-->
+<!--        </constructor-arg>-->
+<!--    </bean>-->
+
+</beans>
